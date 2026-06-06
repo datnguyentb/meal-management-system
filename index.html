@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Lý Suất Ăn Tự Động - Điều Hành Sản Xuất</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #34495e;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f1c40f;
+            --info: #3498db;
+            --light-bg: #f8f9fa;
+            --border: #ddd;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f3f4;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        h1, h2, h3 { color: var(--primary); margin-top: 0; }
+        h1 { text-align: center; margin-bottom: 20px; border-bottom: 2px solid var(--primary); padding-bottom: 10px;}
+
+        /* Thanh công cụ chia sẻ file dữ liệu */
+        .file-toolbar {
+            background: #e8edf2;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            border-left: 5px solid var(--info);
+        }
+        .toolbar-title {
+            font-weight: bold;
+            color: var(--secondary);
+            margin-right: 10px;
+        }
+        .btn-file {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+        .btn-export { background: var(--info); }
+        .btn-export:hover { background: #2980b9; }
+        .btn-import { background: #27ae60; }
+        .btn-import:hover { background: #1e8449; }
+        .file-hint {
+            font-size: 12px;
+            color: #7f8c8d;
+            font-style: italic;
+            flex-grow: 1;
+            text-align: right;
+        }
+
+        /* Thống kê suất ăn */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background: var(--light-bg);
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-weight: bold;
+        }
+        .card.b1 { border-top: 4px solid #3498db; }
+        .card.b2 { border-top: 4px solid var(--warning); }
+        .card.b3 { border-top: 4px solid #e67e22; }
+        .card.b4 { border-top: 4px solid #9b59b6; }
+        .card h4 { margin: 0 0 5px 0; font-size: 13px; color: #666; }
+        .card .count { font-size: 24px; color: var(--primary); }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+
+        @media (min-width: 1200px) {
+            .grid-layout { grid-template-columns: 48% 50%; justify-content: space-between; }
+        }
+
+        .box {
+            background: #fff;
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 6px;
+        }
+
+        .form-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .form-group input, .form-group select { padding: 8px; border: 1px solid var(--border); border-radius: 4px; }
+        .form-group input[type="text"] { flex: 2; }
+        .form-group select { flex: 1; }
+        .form-group button { background: var(--success); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;}
+        .form-group button:hover { background: #27ae60; }
+
+        /* Tiêu đề bảng kèm nút Save thủ công */
+        .box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .btn-save-manual {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            transition: background 0.2s;
+        }
+        .btn-save-manual:hover { background: #1557b0; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+        th, td { border: 1px solid var(--border); padding: 8px; text-align: center; }
+        th { background: var(--primary); color: white; }
+        tr:nth-child(even) { background: #f9f9f9; }
+
+        .select-shift {
+            padding: 6px;
+            font-weight: bold;
+            border-radius: 4px;
+            width: 100%;
+        }
+        .input-ot {
+            width: 55px;
+            padding: 5px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
+        .ca-m { background: #3498db; color: white; }
+        .ca-a { background: var(--warning); color: black; }
+        .ca-hc { background: #2ecc71; color: white; }
+        .ca-n { background: #9b59b6; color: white; }
+        .ca-off { background: #e74c3c; color: white; }
+
+        .btn-action {
+            border: 1px solid #ccc;
+            padding: 3px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            background: white;
+            font-size: 12px;
+            margin: 0 1px;
+        }
+        .btn-action:hover { background: #f0f0f0; }
+        .btn-del { background: var(--danger); color: white; border: none; }
+        .btn-del:hover { background: #c0392b; }
+        
+        .badge-total {
+            background: #34495e;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        /* CSS phần sơ đồ hướng dẫn chuyên nghiệp */
+        .workflow-container {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 25px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .workflow-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e293b;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .workflow-steps {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        @media (min-width: 768px) {
+            .workflow-steps {
+                grid-template-columns: 1fr auto 1fr;
+                align-items: center;
+            }
+        }
+        .step-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 16px;
+            position: relative;
+        }
+        .step-card.sender { border-top: 3px solid #3498db; }
+        .step-card.receiver { border-top: 3px solid #2ecc71; }
+        
+        .step-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .step-badge {
+            font-size: 11px;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+        .sender .step-badge { background: #e3f2fd; color: #1d88e5; }
+        .receiver .step-badge { background: #e8f5e9; color: #2e7d32; }
+        
+        .step-number {
+            font-size: 12px;
+            font-weight: bold;
+            color: #94a3b8;
+        }
+        .step-content ul {
+            margin: 0;
+            padding-left: 18px;
+            color: #475569;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .step-content li { margin-bottom: 6px; }
+        .step-content li:last-child { margin-bottom: 0; }
+        
+        .workflow-arrow {
+            text-align: center;
+            font-size: 24px;
+            color: #cbd5e1;
+            font-weight: bold;
+            transform: rotate(90deg);
+            margin: 5px 0;
+        }
+        @media (min-width: 768px) {
+            .workflow-arrow {
+                transform: rotate(0deg);
+                margin: 0;
+            }
+        }
+        .highlight-text {
+            font-weight: 600;
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>HỆ THỐNG QUẢN LÝ SUẤT ĂN TỰ ĐỘNG</h1>
+
+    <div class="file-toolbar">
+        <span class="toolbar-title">🔄 CHIA SẺ DỮ LIỆU BẢNG 1:</span>
+        <button class="btn-file btn-export" onclick="exportFixedMeals()">📥 Xuất File Gửi Đồng Nghiệp</button>
+        <button class="btn-file btn-import" onclick="importFixedMeals()">📤 Nhập File Từ Đồng Nghiệp</button>
+        <span class="file-hint">*Sau khi bấm nút Lưu Thay Đổi, dữ liệu mới được áp dụng và lưu cứng vào máy*</span>
+    </div>
+
+    <h3>BẢNG TỔNG HỢP SUẤT ĂN TRONG NGÀY</h3>
+    <div class="summary-cards">
+        <div class="card b1">
+            <h4>Chính Ca 1 (Trưa)</h4>
+            <div class="count" id="total-b1">0</div>
+        </div>
+        <div class="card b2">
+            <h4>Phụ Ca 1 (18h Ngày)</h4>
+            <div class="count" id="total-b2">0</div>
+        </div>
+        <div class="card b3">
+            <h4>Phụ Ca 2 (18h Đêm)</h4>
+            <div class="count" id="total-b3">0</div>
+        </div>
+        <div class="card b4">
+            <h4>Chính Ca 2 (Đêm)</h4>
+            <div class="count" id="total-b4">0</div>
+        </div>
+    </div>
+
+    <div class="grid-layout">
+        <div class="box" style="border-top: 4px solid var(--success);">
+            <div class="box-header">
+                <div>
+                    <h2 style="margin:0;">1. Đăng Ký Chế Độ Ăn Cố Định</h2>
+                    <p style="font-size: 12px; color: #e74c3c; margin: 2px 0 0 0; font-weight: bold;">⚠️ Bấm nút bên phải để áp dụng suất ăn cập nhật & Lưu máy!</p>
+                </div>
+                <button class="btn-save-manual" onclick="saveToLocalStorage()">💾 Lưu Thay Đổi</button>
+            </div>
+            
+            <div class="form-group">
+                <input type="text" id="add-name" placeholder="Nhập tên nhân viên mới...">
+                <input type="text" id="add-role" placeholder="Vị trí (Ví dụ: Đóng gói)">
+                <button onclick="addWorker()">Thêm Mới</button>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Họ và Tên</th>
+                            <th>Vị trí</th>
+                            <th>Trưa<br>(Chính 1)</th>
+                            <th>18h ngày<br>(Phụ 1)</th>
+                            <th>18h đêm<br>(Phụ 2)</th>
+                            <th>Đêm<br>(Chính 2)</th>
+                            <th>Thứ tự / Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-fixed-meals">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="box" style="border-top: 4px solid var(--primary);">
+            <h2>2. Chấm Lịch & Tăng Giảm Giờ Làm Việc</h2>
+            <p style="font-size: 12px; color: #666; margin-top:-10px;">(Chấm nhanh lịch hôm nay để xem tổng số lượng cơm cần đặt thực tế)</p>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Họ và Tên</th>
+                            <th>Vị trí</th>
+                            <th>Chọn Ca Gốc</th>
+                            <th>Tăng/Giảm giờ (+ / -)</th>
+                            <th>Tổng thời gian</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-daily-schedule">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="workflow-container">
+        <div class="workflow-title">
+            📦 SƠ ĐỒ ĐỒNG BỘ & CHUYỂN GIAO DỮ LIỆU CỐ ĐỊNH (BẢNG 1)
+        </div>
+        
+        <div class="workflow-steps">
+            <div class="step-card sender">
+                <div class="step-header">
+                    <span class="step-badge">Bên Gửi (Cấp quản lý / Điều phối)</span>
+                    <span class="step-number">PHẦN I</span>
+                </div>
+                <div class="step-content">
+                    <ul>
+                        <li>Thực hiện thêm mới, đổi vị trí, hoặc tích chọn ăn mặc định tại <span class="highlight-text">Bảng 1</span>.</li>
+                        <li>Bắt buộc click nút <span class="highlight-text" style="color: #1a73e8;">"💾 Lưu Thay Đổi"</span> để áp dụng tính suất ăn mới và khóa bộ nhớ máy.</li>
+                        <li>Click nút <span class="highlight-text" style="color: #3498db;">"📥 Xuất File Gửi Đồng Nghiệp"</span> rồi gửi file qua Zalo, Mail.</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="workflow-arrow">➔</div>
+            
+            <div class="step-card receiver">
+                <div class="step-header">
+                    <span class="step-badge">Bên Nhận (Nhân sự ca / Trưởng ca)</span>
+                    <span class="step-number">PHẦN II</span>
+                </div>
+                <div class="step-content">
+                    <ul>
+                        <li>Truy cập hệ thống trên máy tính trạm hoặc điện thoại cá nhân.</li>
+                        <li>Click nút <span class="highlight-text" style="color: #27ae60;">"📤 Nhập File Từ Đồng Nghiệp"</span> và tải file JSON lên.</li>
+                        <li>Hệ thống tự động nạp danh sách, đồng bộ thứ tự hàng và <span class="highlight-text">lưu cứng vĩnh viễn</span> vào máy nhận.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Khởi tạo danh sách mẫu thực tế gốc
+    let defaultWorkers = [
+        { id: 1, name: "Nguyễn Văn Thủy", role: "TT/GS", b1: false, b2: false, b3: false, b4: false },
+        { id: 2, name: "Nguyễn Thị Thanh", role: "TK/TT/GS", b1: false, b2: false, b3: false, b4: false },
+        { id: 3, name: "Nguyễn Minh Quang", role: "Auto", b1: false, b2: false, b3: false, b4: false },
+        { id: 4, name: "Bùi Việt Trung", role: "Auto", b1: true, b2: false, b3: false, b4: false },
+        { id: 5, name: "Vũ Minh Đức", role: "Auto", b1: true, b2: false, b3: false, b4: false },
+        { id: 6, name: "Nguyễn Tiến Đạt", role: "Filler", b1: true, b2: false, b3: false, b4: false },
+        { id: 7, name: "Kiều Minh Giang", role: "Filler/DE", b1: true, b2: false, b3: false, b4: false },
+        { id: 8, name: "Đào Tiến Đạt", role: "VH DE", b1: true, b2: false, b3: false, b4: false },
+        { id: 9, name: "Nguyễn Xuân Tân", role: "Dp/ cân chia", b1: true, b2: false, b3: false, b4: false },
+        { id: 10, name: "Đào Thị Chung", role: "Đóng gói", b1: true, b2: false, b3: false, b4: false },
+        { id: 11, name: "Hoàng Thị Huyên", role: "Đóng gói", b1: true, b2: false, b3: false, b4: false },
+        { id: 12, name: "Trần Thị Định", role: "Đóng gói", b1: true, b2: false, b3: false, b4: false },
+        { id: 13, name: "Nguyễn Thị Hương", role: "Đóng gói", b1: true, b2: false, b3: false, b4: false },
+        { id: 14, name: "Chu Văn Mạnh", role: "SX", b1: true, b2: false, b3: false, b4: false },
+        { id: 15, name: "Dường Thị Lan", role: "SX", b1: true, b2: true, b3: true, b4: true },
+        { id: 16, name: "Trần Thị Huệ", role: "SX", b1: true, b2: true, b3: true, b4: true },
+        { id: 17, name: "Nguyễn Thị Sâm", role: "SX", b1: true, b2: false, b3: false, b4: true },
+        { id: 18, name: "Dương Thị Tứ", role: "SX", b1: true, b2: false, b3: false, b4: true },
+        { id: 19, name: "Trần Đình Tùng", role: "SX", b1: true, b2: true, b3: true, b4: true },
+        { id: 20, name: "Nguyễn Văn Hoàng", role: "Auto", b1: true, b2: true, b3: true, b4: true },
+        { id: 21, name: "Thư", role: "SX", b1: true, b2: false, b3: false, b4: true }
+    ];
+
+    // Mảng lưu chính thức phục vụ tính toán suất ăn
+    let workers = JSON.parse(localStorage.getItem('saved_fixed_meals_production_v8')) || JSON.parse(JSON.stringify(defaultWorkers));
+    
+    // Mảng clone tạm thời phục vụ chỉnh sửa trên giao diện Bảng 1
+    let tempWorkers = JSON.parse(JSON.stringify(workers));
+
+    // Trạng thái chấm ca hằng ngày
+    let dailySchedule = {};
+
+    function initDailySchedule() {
+        workers.forEach(w => {
+            if (!dailySchedule[w.id]) {
+                dailySchedule[w.id] = { baseShift: "OFF", otHours: 0 };
+            }
+        });
+    }
+
+    // CHỨC NĂNG LƯU: Khi ấn nút này mới chính thức tính suất ăn theo bản cập nhật
+    function saveToLocalStorage() {
+        // Đồng bộ dữ liệu tạm thời vào dữ liệu chính thức để tính toán
+        workers = JSON.parse(JSON.stringify(tempWorkers));
+        
+        // Lưu dữ liệu chính thức vào bộ nhớ máy tính
+        localStorage.setItem('saved_fixed_meals_production_v8', JSON.stringify(workers));
+        
+        // Đồng bộ lại Bảng 2 nếu có người mới hoặc thứ tự thay đổi
+        initDailySchedule();
+        
+        // Tiến hành render lại và tính toán lại suất cơm dựa trên bản vừa cập nhật
+        renderApp();
+        alert("💾 Hệ thống đã áp dụng bản cập nhật mới nhất để tính toán suất ăn và lưu vào máy!");
+    }
+
+    function renderApp() {
+        initDailySchedule();
+        
+        const tbodyFixed = document.getElementById('table-fixed-meals');
+        const tbodyDaily = document.getElementById('table-daily-schedule');
+        
+        tbodyFixed.innerHTML = '';
+        tbodyDaily.innerHTML = '';
+
+        // RENDERING BẢNG 1: Sử dụng mảng tạm thời `tempWorkers` để người dùng tha hồ sửa đổi
+        tempWorkers.forEach((worker, index) => {
+            const trFixed = document.createElement('tr');
+            trFixed.innerHTML = `
+                <td>${index + 1}</td>
+                <td style="text-align:left; font-weight:bold;">${worker.name}</td>
+                <td style="color:#555;">${worker.role || '-'}</td>
+                <td><input type="checkbox" ${worker.b1 ? 'checked' : ''} onchange="updateTempMealState(${index}, 'b1', this.checked)"></td>
+                <td><input type="checkbox" ${worker.b2 ? 'checked' : ''} onchange="updateTempMealState(${index}, 'b2', this.checked)"></td>
+                <td><input type="checkbox" ${worker.b3 ? 'checked' : ''} onchange="updateTempMealState(${index}, 'b3', this.checked)"></td>
+                <td><input type="checkbox" ${worker.b4 ? 'checked' : ''} onchange="updateTempMealState(${index}, 'b4', this.checked)"></td>
+                <td>
+                    <button class="btn-action" title="Di chuyển lên" onclick="moveWorker(${index}, -1)">🔼</button>
+                    <button class="btn-action" title="Di chuyển xuống" onclick="moveWorker(${index}, 1)">🔽</button>
+                    <button class="btn-action" title="Xóa nhân viên" onclick="deleteWorker(${index})">❌</button>
+                </td>
+            `;
+            tbodyFixed.appendChild(trFixed);
+        });
+
+        // RENDERING BẢNG 2: Chạy theo mảng chính thức `workers` đã được SAVE để bảo đảm tính chuẩn xác
+        workers.forEach((worker, index) => {
+            const sched = dailySchedule[worker.id] || { baseShift: "OFF", otHours: 0 };
+            const trDaily = document.createElement('tr');
+            
+            let selectClass = "ca-off";
+            if (sched.baseShift === "HC") selectClass = "ca-hc";
+            else if (sched.baseShift === "M") selectClass = "ca-m";
+            else if (sched.baseShift === "A") selectClass = "ca-a";
+            else if (sched.baseShift === "N") selectClass = "ca-n";
+
+            let totalHours = sched.baseShift === "OFF" ? 0 : (8 + sched.otHours);
+            let displayTotalText = sched.baseShift === "OFF" ? "Nghỉ" : `${totalHours} tiếng`;
+
+            trDaily.innerHTML = `
+                <td>${index + 1}</td>
+                <td style="text-align:left; font-weight:bold;">${worker.name}</td>
+                <td style="color:#555;">${worker.role || '-'}</td>
+                <td>
+                    <select class="select-shift ${selectClass}" onchange="changeBaseShift(${worker.id}, this.value)">
+                        <option value="OFF" ${sched.baseShift === 'OFF' ? 'selected' : ''}>Nghỉ (OFF)</option>
+                        <option value="M" ${sched.baseShift === 'M' ? 'selected' : ''}>M (Ca Sáng)</option>
+                        <option value="A" ${sched.baseShift === 'A' ? 'selected' : ''}>A (Ca Chiều)</option>
+                        <option value="HC" ${sched.baseShift === 'HC' ? 'selected' : ''}>HC (Hành Chính)</option>
+                        <option value="N" ${sched.baseShift === 'N' ? 'selected' : ''}>N (Ca Đêm)</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="number" class="input-ot" value="${sched.otHours}" 
+                           min="-8" max="12" ${sched.baseShift === 'OFF' ? 'disabled' : ''}
+                           onchange="changeOtHours(${worker.id}, this.value)">
+                </td>
+                <td><span class="badge-total">${displayTotalText}</span></td>
+            `;
+            tbodyDaily.appendChild(trDaily);
+        });
+
+        calculateTotals();
+    }
+
+    // DI CHUYỂN TRÊN MẢNG TẠM
+    function moveWorker(currentIndex, direction) {
+        let targetIndex = currentIndex + direction;
+        if (targetIndex < 0 || targetIndex >= tempWorkers.length) return;
+        
+        let temp = tempWorkers[currentIndex];
+        tempWorkers[currentIndex] = tempWorkers[targetIndex];
+        tempWorkers[targetIndex] = temp;
+        
+        renderApp();
+    }
+
+    // THÊM NGƯỜI VÀO MẢNG TẠM
+    function addWorker() {
+        const nameInput = document.getElementById('add-name');
+        const roleInput = document.getElementById('add-role');
+        const name = nameInput.value.trim();
+        const role = roleInput.value.trim();
+        
+        if(!name) { alert('Vui lòng nhập tên nhân viên!'); return; }
+
+        tempWorkers.push({
+            id: Date.now(),
+            name: name,
+            role: role || '-',
+            b1: false, b2: false, b3: false, b4: false
+        });
+
+        nameInput.value = '';
+        roleInput.value = '';
+        renderApp();
+    }
+
+    // XÓA NGƯỜI TRÊN MẢNG TẠM
+    function deleteWorker(index) {
+        if(confirm('Xóa nhân viên này khỏi danh sách chỉnh sửa? (Nhấn nút Lưu Thay Đổi để xác nhận xóa vĩnh viễn)')) {
+            tempWorkers.splice(index, 1);
+            renderApp();
+        }
+    }
+
+    // Ghi nhận tích chọn trên mảng tạm thời (Chưa tính lại cơm cho đến khi SAVE)
+    function updateTempMealState(index, mealKey, isChecked) {
+        tempWorkers[index][mealKey] = isChecked;
+    }
+
+    // THAO TÁC XỬ LÝ BẢNG 2 (TÍNH TOÁN THEO THỜI GIAN THỰC KHI CHẤM CÔNG HÀNG NGÀY)
+    function changeBaseShift(id, newBaseShift) {
+        if (dailySchedule[id]) {
+            dailySchedule[id].baseShift = newBaseShift;
+            if(newBaseShift === "OFF") dailySchedule[id].otHours = 0;
+            renderApp();
+        }
+    }
+
+    function changeOtHours(id, newOt) {
+        if (dailySchedule[id]) {
+            dailySchedule[id].otHours = parseInt(newOt) || 0;
+            renderApp();
+        }
+    }
+
+    // THUẬT TOÁN LOGIC TÍNH TOÁN SUẤT ĂN PHÁT SINH
+    function calculateTotals() {
+        let b1 = 0, b2 = 0, b3 = 0, b4 = 0;
+
+        workers.forEach(worker => {
+            const sched = dailySchedule[worker.id];
+            if (!sched || sched.baseShift === "OFF") return;
+
+            let totalHours = 8 + sched.otHours; 
+
+            // 1. NHÓM CA NGÀY (M HOẶC HÀNH CHÍNH)
+            if (sched.baseShift === "M" || sched.baseShift === "HC") {
+                if (totalHours >= 12) {
+                    if (worker.b1) b1++; 
+                    if (worker.b2) b2++; 
+                } else {
+                    if (worker.b1) b1++; 
+                }
+            }
+            // 2. CA CHIỀU (A)
+            else if (sched.baseShift === "A") {
+                if (worker.b2) b2++; 
+            }
+            // 3. CA ĐÊM (N)
+            else if (sched.baseShift === "N") {
+                if (totalHours >= 12) {
+                    if (worker.b3) b3++; 
+                    if (worker.b4) b4++; 
+                } else {
+                    if (worker.b4) b4++; 
+                }
+            }
+        });
+
+        document.getElementById('total-b1').innerText = b1;
+        document.getElementById('total-b2').innerText = b2;
+        document.getElementById('total-b3').innerText = b3;
+        document.getElementById('total-b4').innerText = b4;
+    }
+
+    // XUẤT FILE FILE CHO ĐỒNG NGHIỆP (Xuất từ dữ liệu chính thức đã SAVE)
+    function exportFixedMeals() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(workers, null, 4));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "danh_sach_an_co_dinh.json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        alert("Đã xuất file cấu hình đã lưu! Hãy gửi file 'danh_sach_an_co_dinh.json' này cho đồng nghiệp.");
+    }
+
+    // NHẬN FILE VÀ GHI ĐÈ VÀO TRÌNH DUYỆT MÁY NHẬN
+    function importFixedMeals() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = e => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = readerEvent => {
+                try {
+                    const content = JSON.parse(readerEvent.target.result);
+                    if (Array.isArray(content)) {
+                        workers = content;
+                        tempWorkers = JSON.parse(JSON.stringify(workers));
+                        localStorage.setItem('saved_fixed_meals_production_v8', JSON.stringify(workers));
+                        renderApp();
+                        alert(`Nhập thành công dữ liệu từ file '${file.name}'. Hệ thống đã đồng bộ suất ăn theo file mới.`);
+                    } else {
+                        alert("Định dạng cấu trúc dữ liệu file không hợp lệ!");
+                    }
+                } catch (err) {
+                    alert("Không thể đọc file. Vui lòng kiểm tra lại file dữ liệu.");
+                }
+            }
+            reader.readAsText(file, 'UTF-8');
+        };
+        input.click();
+    }
+
+    window.onload = renderApp;
+</script>
+
+</body>
+</html>
